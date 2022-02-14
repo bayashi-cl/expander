@@ -186,7 +186,7 @@ def main() -> None:
 
         for lineno, line_str in enumerate(lines):
             if "__future__" in line_str:
-                result = line_str + result
+                result = line_str + "\n" + result
                 lines[lineno] = "# " + line_str  # TODO: indent
             elif lineno in import_lines:
                 lines[lineno] = "# " + line_str  # TODO: indent

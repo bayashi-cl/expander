@@ -16,8 +16,10 @@ Pythonのソースコードをオンラインジャッジに提出可能な単�
 
 
 ## 注意
+
 * `__init__.py` に何か書かれていないと壊れる
 * ソースの中にの三重引用符のネストがあると壊れる
+* `__init__.py` 内でimportすると壊れる
 
 ## インストール
 
@@ -31,4 +33,4 @@ pip install git+https://github.com/bayashi-cl/expander
 python -m expander <source file> [-o <output file>] [-m <expand module names...>]
 ```
 
-出力先の指定がない場合は標準出力に出力される。
+出力先の指定がない場合は標準出力に出力される
