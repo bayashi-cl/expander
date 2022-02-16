@@ -90,9 +90,10 @@ class ModuleImporter:
 
             module = importlib.import_module(module_name)
             source = inspect.getsource(module)
-            source = source.replace("'''", '"""')
-            lines = source.split("\n")
             imports = iter_child_nodes(ast.parse(source))
+            source = source.replace("\\", "\\\\")
+            source = source.replace('"""', '\\"""')
+            lines = source.split("\n")
 
             import_lines = []
             for import_info in imports:
@@ -114,9 +115,9 @@ class ModuleImporter:
                 result += self.import_module(None, ".".join(modules[: i + 1]))
 
             code = "_" + module_name.replace(".", "_") + "_code"
-            result += f"{code} = r'''\n"
+            result += f'{code} = """\n'
             result += "\n".join(lines)
-            result += "'''\n\n"
+            result += '"""\n\n'
             result += f"{module_name} = types.ModuleType('{module_name}')\n"
 
             # TODO: asname
