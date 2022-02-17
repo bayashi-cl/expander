@@ -1,12 +1,14 @@
 import ast
-from typing import List, Any, Set, Optional, cast
+import importlib.util
 from dataclasses import dataclass
+from typing import Any, List, Optional, cast
 
 
 @dataclass
 class ImportInfo:
     name: str
     asname: str
+    import_from: str
     lineno: int
     end_lineno: Optional[int]
 
@@ -38,7 +40,9 @@ class ImportVisitor(ast.NodeVisitor):
                     asname = name
                 else:
                     asname = alias.asname
-            self.info.append(ImportInfo(name, asname, node.lineno, node.end_lineno))
+                self.info.append(
+                    ImportInfo(name, asname, name, node.lineno, node.end_lineno)
+                )
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> Any:
         module_name = cast(str, node.module)
@@ -50,14 +54,24 @@ class ImportVisitor(ast.NodeVisitor):
                 if alias.name == "*":
                     raise NotImplementedError
                 name = module_name + "." + alias.name
+
+                try:
+                    importlib.util.find_spec(name)
+                    import_from = name
+                except ModuleNotFoundError:
+                    import_from = module_name
+
                 if alias.asname is None:
                     asname = alias.name
                 else:
                     asname = alias.asname
-                self.info.append(ImportInfo(name, asname, node.lineno, node.end_lineno))
+                self.info.append(
+                    ImportInfo(name, asname, import_from, node.lineno, node.end_lineno)
+                )
 
 
 def search_import(code: str, now: str, expand_module: List[str]) -> List[ImportInfo]:
     tree = ast.parse(code)
     visitor = ImportVisitor(now, expand_module)
-    return visitor.visit(tree)
+    visitor.visit(tree)
+    return visitor.info

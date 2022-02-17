@@ -48,9 +48,23 @@ if import_from is None:
             module_name = import_from
 ```
 
+### importのast表現からの変換
+
+大文字がモジュール、小文字がモジュールの要素(関数, クラス, 変数...)
+
+|import                  |asname|name |import from|
+|:-----------------------|:-----|:----|:----------|
+|`import A.B`            |A.B   |A.B  |A.B        |
+|`import A.B as C`       |C     |A.B  |A.B        |
+|`from A.B import C`     |C     |A.B.C|A.B.C      |
+|`from A.B import C as D`|D     |A.B.C|A.B.C      |
+|`from A.B import f`     |f     |A.B.f|A.B        |
+|`from A.B import f as g`|g     |A.B.f|A.B        |
+|`from A.B import *`     |*     |A.B.*|A.B        |
+
 ### パフォーマンス
 
-* Cpythonだと少し遅くなった （50msくらい？）
+* CPythonだと少し遅くなった （50msくらい？）
 * PyPyだと逆に速くなった（なんで？）
 
 ## 方針
@@ -94,28 +108,14 @@ exec(_code_a_b_c, a.b.c.__dict__)
     1. `code_a_b_c = """\n{code}"""\n`
 
 * asname\
-    各importについて `a_b_c["{asname}"] = {name}`
+    各importについて `a_b_c.__dict__["{asname}"] = {name}`
 
 * exec\
     `exec(_code_a_b_c, a.b.c.__dict__)`
 
 ### import探索パート
 
-大文字がモジュール、小文字がモジュールの要素(関数, クラス, 変数...)
-
-|import                  |asname|name |
-|:-----------------------|:-----|:----|
-|`import A.B`            |A.B   |A.B  |
-|`import A.B as C`       |C     |A.B  |
-|`from A.B import C`     |C     |A.B.C|
-|`from A.B import C as D`|D     |A.B.C|
-|`from A.B import f`     |f     |A.B.f|
-|`from A.B import f as g`|g     |A.B.f|
-|`from A.B import *`     |*     |A.B.*|
-
-
-ワイルドカードインポートは`__...__`以外のものを全てimport?
-
+* ワイルドカードインポートは`__...__`以外のものを全てimport?
 
 #### 相対インポートへの対処
 

@@ -1,9 +1,9 @@
+import importlib
 import inspect
 import pathlib
-import importlib
-from typing import Set, cast, List
+from typing import List, Set, cast
 
-from .import_info import search_import, ImportInfo
+from .import_info import ImportInfo, search_import
 
 
 class ModuleInfo:
@@ -18,9 +18,11 @@ class ModuleInfo:
     def __init__(self, name: str, expand_module: List[str]) -> None:
         self.name = name
         self.code_valname = f'_code_{name.replace(".", "_")}'
-        self.module_type = f'{self.name} = ModuleType("{self.name}")'
+        self.module_type = f'{self.name} = ModuleType("{self.name}")\n'
         self.expand_module = expand_module
+        self.dependance = set()
 
+        self.expand_to = ""
         self.expand_to += self.make_code()
         self.expand_to += self.make_aliase()
         self.expand_to += self.make_exec()
@@ -39,7 +41,7 @@ class ModuleInfo:
         for info in self.imports:
             for lineno in range(info.lineno - 1, cast(int, info.end_lineno)):
                 import_lines.add(lineno)
-            self.dependance.add(info.name)
+            self.dependance.add(info.import_from)
 
         # エスケープ処理
         code = code.replace("\\", "\\\\")
@@ -53,13 +55,13 @@ class ModuleInfo:
 
         res = f'{self.code_valname} = """\n'
         res += "\n".join(code_lines)
-        res += '"""\n'
+        res += '\n"""\n'
         return res
 
     def make_aliase(self) -> str:
         res = ""
         for info in self.imports:
-            res += f'{self.name}["{info.asname}"] = {info.name}\n'
+            res += f'{self.name}.__dict__["{info.asname}"] = {info.name}\n'
         return res
 
     def make_exec(self) -> str:

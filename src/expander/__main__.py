@@ -3,203 +3,110 @@ source expander
 """
 
 import argparse
-import ast
-import importlib
-import inspect
-import re
-from typing import List, Optional, cast
+import pathlib
+import sys
+from collections import defaultdict
+from modulefinder import ModuleFinder
+from typing import DefaultDict, Dict, List, Set, cast
 
-expand_module_patterns: List[re.Pattern] = []
-
-
-class ImportInfo:
-    def __init__(
-        self,
-        lineno: int,
-        end_lineno: int,
-        import_from: Optional[str] = None,
-        name: Optional[str] = None,
-        asname: Optional[str] = None,
-    ) -> None:
-        self.lineno = lineno
-        self.end_lineno = end_lineno
-        self.import_from = import_from
-        self.name = name
-        self.asname = asname
-
-
-def iter_child_nodes(
-    node: ast.AST, import_info: Optional[ImportInfo] = None
-) -> List[ImportInfo]:
-    result = []
-
-    if isinstance(node, ast.alias):
-        if import_info:
-            result.append(
-                ImportInfo(
-                    import_info.lineno,
-                    import_info.end_lineno,
-                    import_info.import_from,
-                    node.name,
-                    node.asname,
-                )
-            )
-        return result
-
-    if isinstance(node, ast.Import):
-        for name in node.names:
-            if any(pat.match(name.name) for pat in expand_module_patterns):
-                if hasattr(node, "end_lineno"):
-                    end_lineno = cast(int, node.end_lineno)  # type: ignore
-                else:
-                    end_lineno = node.lineno
-                import_info = ImportInfo(node.lineno, end_lineno)
-    elif isinstance(node, ast.ImportFrom):
-        if any(pat.match(cast(str, node.module)) for pat in expand_module_patterns):
-            if hasattr(node, "end_lineno"):
-                end_lineno = cast(int, node.end_lineno)  # type: ignore
-            else:
-                end_lineno = node.lineno
-            import_info = ImportInfo(node.lineno, end_lineno, node.module)
-
-    for child in ast.iter_child_nodes(node):
-        result += iter_child_nodes(child, import_info)
-    return result
+from .import_info import ImportInfo, search_import
+from .module_info import ModuleInfo
 
 
 class ModuleImporter:
-    def __init__(self) -> None:
-        self.imported_modules: List[str] = []
+    imported_modules: Set[str]
+    modules: Dict[str, ModuleInfo]
 
-    def import_module(
-        self, import_from: Optional[str], name: str, asname: Optional[str] = None
-    ) -> str:
-        result = ""
+    def __init__(self, modules: Dict[str, ModuleInfo]) -> None:
+        self.modules = modules
+        self.imported_modules = set()
 
-        if import_from is None:
-            module_name = name
-        else:
-            try:
-                module_name = import_from + "." + name
-                importlib.import_module(module_name)
-            except ImportError:
-                module_name = import_from
+    def expand(self, module_info_: ModuleInfo) -> str:
+        module_types = ""
+        if not self.imported_modules:
+            module_types += "from types import ModuleType\n\n"
+        body = ""
 
-        if module_name not in self.imported_modules:
-            self.imported_modules.append(module_name)
+        def dfs(module_info: ModuleInfo) -> None:
+            if module_info.name in self.imported_modules:
+                return
+            self.imported_modules.add(module_info.name)
 
-            module = importlib.import_module(module_name)
-            source = inspect.getsource(module)
-            imports = iter_child_nodes(ast.parse(source))
-            source = source.replace("\\", "\\\\")
-            source = source.replace('"""', '\\"""')
-            lines = source.split("\n")
+            nonlocal module_types, body
+            module_types += module_info.module_type
+            for dep in module_info.dependance:
+                dfs(self.modules[dep])
+            body += module_info.expand_to
 
-            import_lines = []
-            for import_info in imports:
-                result += self.import_module(
-                    import_info.import_from,
-                    cast(str, import_info.name),
-                    import_info.asname,
-                )
-                for line in range(import_info.lineno - 1, import_info.end_lineno):
-                    import_lines.append(line)
-
-            for lineno, line_str in enumerate(lines):
-                if lineno not in import_lines:
-                    continue
-                lines[lineno] = "# " + line_str  # TODO: indent
-
-            modules = module_name.split(".")
-            for i in range(len(modules) - 1):
-                result += self.import_module(None, ".".join(modules[: i + 1]))
-
-            code = "_" + module_name.replace(".", "_") + "_code"
-            result += f'{code} = """\n'
-            result += "\n".join(lines)
-            result += '"""\n\n'
-            result += f"{module_name} = types.ModuleType('{module_name}')\n"
-
-            # TODO: asname
-            imported = []
-            for import_info in imports:
-                if import_info.import_from is None:
-                    modules = cast(str, import_info.name).split(".")
-                    for i in range(len(modules)):
-                        import_name = ".".join(modules[: i + 1])
-                        if import_name in imported:
-                            continue
-                        imported.append(import_name)
-                        result += (
-                            f"{module_name}.__dict__['{import_name}']"
-                            f" = {import_name}\n"
-                        )
-                else:
-                    result += (
-                        f"{module_name}.__dict__['{import_info.name}']"
-                        f" = {import_info.import_from}.{import_info.name}\n"
-                    )
-
-            result += f"exec({code}, {module_name}.__dict__)\n"
-
-        if import_from is None:
-            if asname is None:
-                if name != module_name:
-                    result += f"{name} = {module_name}\n"
-            else:
-                result += f"{asname} = {module_name}\n"
-        else:
-            if asname is None:
-                if name != import_from + "." + name:
-                    result += f"{name} = {import_from}.{name}\n"
-            else:
-                result += f"{asname} = {import_from}.{name}\n"
-
-        return result + "\n"
+        module_info_split = module_info_.name.split(".")
+        for i in range(len(module_info_split)):
+            dfs(self.modules[".".join(module_info_split[: i + 1])])
+        return module_types + "\n" + body
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("src", help="Source code")
-    parser.add_argument("-o", "--output", help="Single combined code")
+    parser.add_argument("src", type=pathlib.Path, help="Source path")
+    parser.add_argument("-o", "--output", type=pathlib.Path, help="output path")
     parser.add_argument("-m", "--modules", nargs="*", help="list of expand module")
     args = parser.parse_args()
+    expand_module: List[str] = args.modules
 
-    global expand_module_patterns
-    expand_module_patterns = [
-        re.compile(f"^{m}\\.?") for m in cast(List[str], args.modules)
-    ]
+    # 展開するモジュールを探索
+    finder = ModuleFinder()
+    finder.run_script(str(args.src))
+    imported_modules: List[str] = []
+    for module in finder.modules.values():
+        if cast(str, module.__name__).split(".")[0] in expand_module:  # type:ignore
+            imported_modules.append(module.__name__)  # type:ignore
+    #
+    modules: Dict[str, ModuleInfo] = dict()
+    for modulename in imported_modules:
+        modules[modulename] = ModuleInfo(modulename, expand_module)
 
-    with open(args.src) as f:
-        lines = f.readlines()
-    imports = iter_child_nodes(ast.parse("".join(lines)))
+    # 展開するものがないとき
+    print(f"{len(imported_modules)} modules found.", file=sys.stderr)
+    print(*imported_modules, sep="\n", file=sys.stderr)
+    if not imported_modules:
+        print("no module to expand", file=sys.stderr)
+        if args.output is None:
+            print(args.src.read_text())
+        else:
+            args.output.write_text(args.src.read_text())
+        sys.exit(0)
 
-    if imports:
-        importer = ModuleImporter()
-        result = "import types\n\n"
-        import_lines = []
-        for import_info in imports:
-            result += importer.import_module(
-                import_info.import_from, cast(str, import_info.name), import_info.asname
-            )
-            for line in range(import_info.lineno - 1, import_info.end_lineno):
-                import_lines.append(line)
+    # src内のimportを探索
+    code: str = args.src.read_text()
+    imports = search_import(code, __name__, expand_module)
+    import_lines = set()
+    expand_lines: DefaultDict[int, List[ImportInfo]] = defaultdict(list)
+    for info in imports:
+        for lineno in range(info.lineno - 1, cast(int, info.end_lineno)):
+            import_lines.add(lineno)
+        expand_lines[cast(int, info.end_lineno) - 1].append(info)
 
-        for lineno, line_str in enumerate(lines):
-            if "__future__" in line_str:
-                result = line_str + "\n" + result
-                lines[lineno] = "# " + line_str  # TODO: indent
-            elif lineno in import_lines:
-                lines[lineno] = "# " + line_str  # TODO: indent
-        result += "".join(lines)
+    # コード生成
+    code_lines = code.splitlines(keepends=True)
+    importer = ModuleImporter(modules)
+    result = ""
+
+    for lineno, line_str in enumerate(code_lines):
+        if lineno in import_lines:
+            result += "# " + line_str
+        else:
+            result += line_str
+
+        if lineno in expand_lines:
+            for importinfo in expand_lines[lineno]:
+                result += importer.expand(modules[importinfo.import_from])
+                if importinfo.asname != importinfo.name:
+                    result += f"{importinfo.asname} = {importinfo.name}\n"
+
+    # 出力
+    if args.output is None:
+        print(result)
     else:
-        result = "".join(lines)
-
-    if args.output:
-        with open(args.output, "w") as f:
-            f.write(result)
-    else:
-        print(result, end="")
+        args.output.write_text(result)
 
 
 if __name__ == "__main__":
