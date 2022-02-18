@@ -88,8 +88,6 @@ def main() -> None:
             import_lines.add(lineno)
         expand_lines[cast(int, info.end_lineno) - 1].append(info)
 
-    # print(imports, file=sys.stderr)
-
     # コード生成
     code_lines = code.splitlines(keepends=True)
     importer = ModuleImporter(modules)
