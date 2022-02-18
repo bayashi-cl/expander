@@ -2,6 +2,33 @@
 
 Pythonのソースコードをオンラインジャッジに提出可能な単一ソースのものに変換します。
 
+[このツールを使った提出](https://atcoder.jp/contests/abc238/submissions/29410034)
+
+<details>
+<summary>展開前のコード</summary>
+
+```python
+import sys
+
+from byslib.core import IINF, MOD, debug, sinput
+from byslib.data.union_find import UnionFindTree
+
+
+def main() -> None:
+    n, q = map(int, sinput().split())
+    uft = UnionFindTree(n + 1)
+    for _ in range(q):
+        l, r = map(int, sinput().split())
+        uft.union(l - 1, r)
+    print("Yes" if uft.same(0, n) else "No")
+
+
+if __name__ == "__main__":
+    sys.setrecursionlimit(10**6)
+    main()
+```
+</details>
+
 ## 注意
 
 * **CodeForcesの難読化禁止の規定に触れる可能性があります。確認が取れるまではCodeForcesには提出しないでください**
@@ -50,5 +77,11 @@ pip install git+https://github.com/bayashi-cl/expander
 ```
 python -m expander <source file> [-o <output file>] [-m <expand module names...>]
 ```
+
+例:
+```
+python -m expander main.py -o out.py -m byslib
+```
+
 
 出力先の指定がない場合は標準出力に出力される
