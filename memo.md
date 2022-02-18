@@ -64,8 +64,8 @@ if import_from is None:
 
 ### パフォーマンス
 
-* CPythonだと少し遅くなった （50msくらい？）
-* PyPyだと逆に速くなった（なんで？）
+* Cpythonはクラス定義をグローバルに置かなくなったからか少し速くなった
+* PyPyはほぼ変化なし
 
 ## 方針
 ### ModuleInfo作成パート
