@@ -35,7 +35,9 @@ class ModuleImporter:
             nonlocal module_types, body
             module_types += module_info.module_type
             for dep in module_info.dependance:
-                dfs(self.modules[dep])
+                dep_split = dep.split(".")
+                for i in range(len(dep_split)):
+                    dfs(self.modules[".".join(dep_split[: i + 1])])
             body += module_info.expand_to
 
         module_info_split = module_info_.name.split(".")
