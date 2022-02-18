@@ -41,7 +41,10 @@ class ModuleImporter:
         module_info_split = module_info_.name.split(".")
         for i in range(len(module_info_split)):
             dfs(self.modules[".".join(module_info_split[: i + 1])])
-        return module_types + "\n" + body
+        if len(module_types) > 0 or len(body) > 0:
+            return module_types + "\n" + body
+        else:
+            return module_types + body
 
 
 def main() -> None:
@@ -77,7 +80,7 @@ def main() -> None:
 
     # src内のimportを探索
     code: str = args.src.read_text()
-    imports = search_import(code, __name__, expand_module)
+    imports = search_import(code, "__main__", expand_module)
     import_lines = set()
     expand_lines: DefaultDict[int, List[ImportInfo]] = defaultdict(list)
     for info in imports:
@@ -85,28 +88,30 @@ def main() -> None:
             import_lines.add(lineno)
         expand_lines[cast(int, info.end_lineno) - 1].append(info)
 
+    # print(imports, file=sys.stderr)
+
     # コード生成
     code_lines = code.splitlines(keepends=True)
     importer = ModuleImporter(modules)
-    result = ""
+    result: List[str] = []
 
     for lineno, line_str in enumerate(code_lines):
         if lineno in import_lines:
-            result += "# " + line_str
+            result.append("# " + line_str)
         else:
-            result += line_str
+            result.append(line_str)
 
         if lineno in expand_lines:
             for importinfo in expand_lines[lineno]:
-                result += importer.expand(modules[importinfo.import_from])
+                result.append(importer.expand(modules[importinfo.import_from]))
                 if importinfo.asname != importinfo.name:
-                    result += f"{importinfo.asname} = {importinfo.name}\n"
+                    result.append(f"{importinfo.asname} = {importinfo.name}\n")
 
     # 出力
     if args.output is None:
-        print(result)
+        print("".join(result), end="")
     else:
-        args.output.write_text(result)
+        args.output.write_text("".join(result))
 
 
 if __name__ == "__main__":

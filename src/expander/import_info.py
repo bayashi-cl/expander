@@ -48,7 +48,7 @@ class ImportVisitor(ast.NodeVisitor):
         module_name = cast(str, node.module)
         if node.level != 0:
             base = self.now_module.split(".")[: -node.level]
-            module_name = ".".join(base) + module_name
+            module_name = ".".join(base) + "." + module_name
         if module_name.split(".")[0] in self.expand_module:
             for alias in node.names:
                 if alias.name == "*":
@@ -56,8 +56,10 @@ class ImportVisitor(ast.NodeVisitor):
                 name = module_name + "." + alias.name
 
                 try:
-                    importlib.util.find_spec(name)
-                    import_from = name
+                    if importlib.util.find_spec(name) is None:
+                        import_from = module_name
+                    else:
+                        import_from = name
                 except ModuleNotFoundError:
                     import_from = module_name
 
