@@ -18,10 +18,6 @@ class ImportInfo:
 
 
 class ImportVisitor(ast.NodeVisitor):
-    info: List[ImportInfo]
-    now_module: str
-    expand_module: List[str]
-
     def __init__(
         self, now_module: str, expand_module: Optional[List[str]] = None
     ) -> None:
@@ -30,7 +26,7 @@ class ImportVisitor(ast.NodeVisitor):
             self.expand_module = []
         else:
             self.expand_module = expand_module
-        self.info = []
+        self.info: List[ImportInfo] = []
 
     def visit_Import(self, node: ast.Import) -> Any:
         for alias in node.names:

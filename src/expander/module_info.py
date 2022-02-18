@@ -7,20 +7,12 @@ from .import_info import ImportInfo, search_import
 
 
 class ModuleInfo:
-    name: str
-    name_: str
-    module_type: str
-    expand_to: str
-    dependance: Set[str]
-    imports: List[ImportInfo]
-    expand_module: List[str]
-
     def __init__(self, name: str, expand_module: List[str]) -> None:
         self.name = name
         self.code_valname = f'_code_{name.replace(".", "_")}'
         self.module_type = f'{self.name} = ModuleType("{self.name}")\n'
         self.expand_module = expand_module
-        self.dependance = set()
+        self.dependance: Set[str] = set()
 
         self.expand_to = ""
         self.expand_to += self.make_code()

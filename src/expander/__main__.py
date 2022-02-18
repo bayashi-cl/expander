@@ -14,12 +14,9 @@ from .module_info import ModuleInfo
 
 
 class ModuleImporter:
-    imported_modules: Set[str]
-    modules: Dict[str, ModuleInfo]
-
     def __init__(self, modules: Dict[str, ModuleInfo]) -> None:
         self.modules = modules
-        self.imported_modules = set()
+        self.imported_modules: Set[str] = set()
 
     def expand(self, module_info_: ModuleInfo) -> str:
         module_types = ""
