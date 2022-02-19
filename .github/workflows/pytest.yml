@@ -1,0 +1,27 @@
+name: pytest
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    name: run tests with pytest
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: install self
+      run: pip3 install .
+
+    - name: install pytest
+      run: pip3 install -U pytest
+
+    - name: run test
+      run: pytest
