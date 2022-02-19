@@ -3,6 +3,8 @@ import importlib.util
 from dataclasses import dataclass
 from typing import Any, List, Optional, cast
 
+import sys
+
 
 @dataclass
 class ImportInfo:
@@ -41,16 +43,22 @@ class ImportVisitor(ast.NodeVisitor):
                 )
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> Any:
-        module_name = cast(str, node.module)
+        if node.module is None:
+            module_name = ""
+        else:
+            module_name = node.module
         if node.level != 0:
-            base = self.now_module.split(".")[: -node.level]
-            module_name = ".".join(base) + "." + module_name
+            base = ".".join(self.now_module.split(".")[: -node.level])
+            if module_name:
+                module_name = base + "." + module_name
+            else:
+                module_name = base
+
         if module_name.split(".")[0] in self.expand_module:
             for alias in node.names:
                 if alias.name == "*":
                     raise NotImplementedError
                 name = module_name + "." + alias.name
-
                 try:
                     if importlib.util.find_spec(name) is None:
                         import_from = module_name

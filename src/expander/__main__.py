@@ -27,6 +27,7 @@ class ModuleImporter:
         def dfs(module_info: ModuleInfo) -> None:
             if module_info.name in self.imported_modules:
                 return
+            print(module_info.name, file=sys.stderr)
             self.imported_modules.add(module_info.name)
 
             nonlocal module_types, body
@@ -76,8 +77,9 @@ def main() -> None:
         else:
             args.output.write_text(args.src.read_text())
         sys.exit(0)
-
+    # print(modules["testlib_a.sublib_a.sub_ab"].dependance, file=sys.stderr)
     # src内のimportを探索
+    print("expand start", file=sys.stderr)
     code: str = args.src.read_text()
     imports = search_import(code, "__main__", expand_module)
     import_lines = set()

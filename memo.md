@@ -124,6 +124,7 @@ exec(_code_a_b_c, a.b.c.__dict__)
 * モジュール名の後ろから`node.level`個削ったあと名前を付け足す
 * `__init__.py` のときは名前に`.`を追加する必要がある
 * `hasattr(module, "__path__")`で判定
+* `from . import ...`の場合はmoduleが`None`になるので注意
 
 ### コード追加パート
 
