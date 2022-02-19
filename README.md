@@ -1,3 +1,5 @@
+[![pytest](https://github.com/bayashi-cl/expander/actions/workflows/pytest.yml/badge.svg)](https://github.com/bayashi-cl/expander/actions/workflows/pytest.yml)
+
 # expander
 
 Pythonのソースコードをオンラインジャッジに提出可能な単一ソースのものに変換します。
