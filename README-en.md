@@ -1,15 +1,13 @@
 [![pytest](https://github.com/bayashi-cl/expander/actions/workflows/pytest.yml/badge.svg)](https://github.com/bayashi-cl/expander/actions/workflows/pytest.yml)
 
-[English Version](https://github.com/bayashi-cl/expander/blob/main/README-en.md)
-
 # expander
 
-Pythonのソースコードをオンラインジャッジに提出可能な単一ソースのものに変換します。
+Convert Python source code into a single source that can be submitted to online judges.
 
-[このツールを使った提出](https://atcoder.jp/contests/abc238/submissions/29410034)
+[Submission using this tool.](https://atcoder.jp/contests/abc238/submissions/29410034)
 
 <details>
-<summary>展開前のコード</summary>
+<summary>Before expand.</summary>
 
 ```python
 import sys
@@ -33,30 +31,30 @@ if __name__ == "__main__":
 ```
 </details>
 
-## 注意
+## Attention
 
-* **CodeForcesの[難読化禁止の規定](https://codeforces.com/blog/entry/4088)に触れる可能性があります。確認が取れるまではCodeForcesには提出しないでください**
-* まだバグが存在する可能性があります。コンテスト中に使用する場合は正しく実行できるかを確認してから提出してください
+* **Submission may violate CodeForces' [no obfuscation policy](https://codeforces.com/blog/entry/4088). Please do not submit to CodeForces until you have confirmation.**
+* There may still be bugs present. If you want to use it during the contest, please make sure that it runs correctly before submitting it.
 
-## オリジナル
+## Original
 
 <https://github.com/not522/ac-library-python/blob/master/atcoder/__main__.py>
 
 
-**変更点**
+**Modifications**
 
-* 指定されたモジュールを展開可能に
-* `__future__` 系を正しくimportできるように
-* ソース内でエスケープ（改行文字とか）を使用可能に
+* Make the specified module expandable.
+* Allow `__future__` modules to be imported correctly.
+* Allow escaping in the source (such as newline characters).
 
-## できないこと
+## What you can't do
 
-* インデントされているimportは壊れる
-* import文を使わない(importlibとか)と壊れる
+* Indented imports will be broken.
+* If you don't use import statements (like importlib), it will break.
 
-## パフォーマンス
+## Performance
 
-Library Checkerで検証
+Verified with Library Checker.
 
 Problem: [Shortest Path](https://judge.yosupo.jp/problem/shortest_path)
 
@@ -70,22 +68,22 @@ Problem: [Shortest Path](https://judge.yosupo.jp/problem/shortest_path)
 |expander |<https://judge.yosupo.jp/submission/79096> |913 ms |
 |pure     |<https://judge.yosupo.jp/submission/79097> |918 ms |
 
-## インストール
+## How to install
 
 ```
 pip install git+https://github.com/bayashi-cl/expander
 ```
 
-## 実行コマンド
+## Usage
 
 ```
 python -m expander <source file> [-o <output file>] [-m <expand module names...>]
 ```
 
-例:
+Example:
 ```
 python -m expander main.py -o out.py -m byslib
 ```
 
 
-出力先の指定がない場合は標準出力に出力される
+If no output destination is specified, the output will be sent to standard output.
