@@ -1,9 +1,8 @@
 import ast
 import importlib.util
-from dataclasses import dataclass
-from typing import Any, List, Optional, cast
-
 import sys
+from dataclasses import dataclass
+from typing import Any, List, Optional
 
 
 @dataclass
@@ -20,10 +19,8 @@ class ImportInfo:
 
 
 class ImportVisitor(ast.NodeVisitor):
-    def __init__(
-        self, now_module: str, expand_module: Optional[List[str]] = None
-    ) -> None:
-        self.now_module = now_module
+    def __init__(self, now_pkg: str, expand_module: Optional[List[str]] = None) -> None:
+        self.now_pkg = now_pkg
         if expand_module is None:
             self.expand_module = []
         else:
@@ -48,11 +45,9 @@ class ImportVisitor(ast.NodeVisitor):
         else:
             module_name = node.module
         if node.level != 0:
-            base = ".".join(self.now_module.split(".")[: -node.level])
-            if module_name:
-                module_name = base + "." + module_name
-            else:
-                module_name = base
+            # resolve relative import
+            dot_module = "." * node.level + module_name
+            module_name = importlib.util.resolve_name(dot_module, self.now_pkg)
 
         if module_name.split(".")[0] in self.expand_module:
             for alias in node.names:
@@ -62,10 +57,13 @@ class ImportVisitor(ast.NodeVisitor):
                 name = module_name + "." + alias.name
                 try:
                     if importlib.util.find_spec(name) is None:
+                        # from module import (class|function|...)
                         import_from = module_name
                     else:
+                        # from module import submodule
                         import_from = name
                 except ModuleNotFoundError:
+                    # from module import (class|function|...)
                     import_from = module_name
 
                 if alias.asname is None:
@@ -77,8 +75,8 @@ class ImportVisitor(ast.NodeVisitor):
                 )
 
 
-def search_import(code: str, now: str, expand_module: List[str]) -> List[ImportInfo]:
+def search_import(code: str, pkg: str, expand_module: List[str]) -> List[ImportInfo]:
     tree = ast.parse(code)
-    visitor = ImportVisitor(now, expand_module)
+    visitor = ImportVisitor(pkg, expand_module)
     visitor.visit(tree)
     return visitor.info

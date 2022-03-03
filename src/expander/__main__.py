@@ -81,7 +81,7 @@ def main() -> None:
     # src内のimportを探索
     print("expand start", file=sys.stderr)
     code: str = args.src.read_text()
-    imports = search_import(code, "__main__", expand_module)
+    imports = search_import(code, "", expand_module)
     import_lines = set()
     expand_lines: DefaultDict[int, List[ImportInfo]] = defaultdict(list)
     for info in imports:

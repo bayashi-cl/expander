@@ -1,15 +1,16 @@
 import importlib
 import importlib.metadata
-import inspect
 import pathlib
+from typing import Dict, List, Optional, Set, cast
+
 from pkg_resources import Environment
-from typing import List, Set, cast, Dict, Optional
 
 from .import_info import search_import
 
+# モジュール名 -> パッケージ名の辞書を作成(e.g. sklearn -> scikit-learn)
 module_to_pkg_name: Dict[str, str] = dict()
 pkg_license: Dict[str, Optional[str]] = dict()
-for pkg_name, env in Environment()._distmap.items():  # type:ignore
+for pkg_name, env in Environment()._distmap.items():  # type: ignore
     for dist in env:
         try:
             pkg_license[pkg_name] = dist._provider.get_metadata("LICENSE")
@@ -58,14 +59,13 @@ class ModuleInfo:
 
     def make_code(self) -> str:
         module = importlib.import_module(self.name)
-        module_file = pathlib.Path(cast(str, inspect.getsourcefile(module)))
-        code = module_file.read_text()
+        code = pathlib.Path(cast(str, module.__file__)).read_text()
 
         # importを探索
-        if hasattr(module, "__path__"):  # __init__.py
-            self.imports = search_import(code, self.name + ".", self.expand_module)
-        else:  # other
-            self.imports = search_import(code, self.name, self.expand_module)
+        self.imports = search_import(
+            code, cast(str, module.__package__), self.expand_module
+        )
+
         import_lines = set()
         for info in self.imports:
             for lineno in range(info.lineno - 1, cast(int, info.end_lineno)):
