@@ -85,7 +85,7 @@ python -m expander <source file> [-o <output file>] [-m <expand module names...>
 
 例:
 ```
-python -m expander main.py -o out.py -m byslib
+python -m expander main.py -o out.py -m yourlib
 ```
 
 
