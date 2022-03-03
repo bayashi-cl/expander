@@ -77,7 +77,7 @@ def main() -> None:
         else:
             args.output.write_text(args.src.read_text())
         sys.exit(0)
-    # print(modules["testlib_a.sublib_a.sub_ab"].dependance, file=sys.stderr)
+
     # src内のimportを探索
     print("expand start", file=sys.stderr)
     code: str = args.src.read_text()

@@ -1,16 +1,34 @@
 import importlib
+import importlib.metadata
 import inspect
 import pathlib
-from typing import List, Set, cast
+from pkg_resources import Environment
+from typing import List, Set, cast, Dict, Optional
 
-from .import_info import ImportInfo, search_import
+from .import_info import search_import
+
+module_to_pkg_name: Dict[str, str] = dict()
+pkg_license: Dict[str, Optional[str]] = dict()
+for pkg_name, env in Environment()._distmap.items():  # type:ignore
+    for dist in env:
+        try:
+            pkg_license[pkg_name] = dist._provider.get_metadata("LICENSE")
+        except Exception:
+            pkg_license[pkg_name] = None
+        try:
+            for top in dist._provider.get_metadata_lines("top_level.txt"):
+                module_to_pkg_name[top] = pkg_name
+        except Exception:
+            pass
 
 
 class ModuleInfo:
     def __init__(self, name: str, expand_module: List[str]) -> None:
         self.name = name
         self.code_valname = f'_code_{name.replace(".", "_")}'
-        self.module_type = f'{self.name} = ModuleType("{self.name}")\n'
+        self.module_type = (
+            self.make_metadata() + f'{self.name} = ModuleType("{self.name}")\n'
+        )
         self.expand_module = expand_module
         self.dependance: Set[str] = set()
 
@@ -18,6 +36,25 @@ class ModuleInfo:
         self.expand_to += self.make_code()
         self.expand_to += self.make_aliase()
         self.expand_to += self.make_exec()
+
+    def make_metadata(self) -> str:
+        res = []
+        if self.name in module_to_pkg_name:
+            pkg_name = module_to_pkg_name[self.name]
+            meta = importlib.metadata.metadata(pkg_name)
+            res.append(f'# Package infomation of {meta["Name"]}\n')
+            res.append(f'# Version: {meta["Version"]}\n')
+            if "Author" in meta:
+                res.append(f'# Author : {meta["Author"]}\n')
+            res.append(f'# License: {meta["License"]}\n')
+            if meta["License"] not in {"CC0"}:
+                license_text = pkg_license[pkg_name]
+                if license_text is not None:
+                    res.append("#\n")
+                    for line in license_text.splitlines():
+                        res.append(f"# {line}\n")
+            res.append("\n")
+        return "".join(res)
 
     def make_code(self) -> str:
         module = importlib.import_module(self.name)

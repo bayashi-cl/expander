@@ -13,4 +13,5 @@ setup(
     author_email="bayashi.cl@gmail.com",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
+    license="CC0",
 )
