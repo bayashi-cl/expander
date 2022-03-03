@@ -1,11 +1,14 @@
 import importlib
 import importlib.metadata
 import pathlib
+from logging import getLogger
 from typing import Dict, List, Optional, Set, cast
 
 from pkg_resources import Environment
 
 from .import_info import search_import
+
+logger = getLogger(__name__)
 
 # モジュール名 -> パッケージ名の辞書を作成(e.g. sklearn -> scikit-learn)
 module_to_pkg_name: Dict[str, str] = dict()

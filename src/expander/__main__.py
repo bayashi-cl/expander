@@ -3,6 +3,7 @@ source expander
 """
 
 import argparse
+import logging
 import pathlib
 import sys
 from collections import defaultdict
@@ -11,6 +12,18 @@ from typing import DefaultDict, Dict, List, Set, cast
 
 from .import_info import ImportInfo, search_import
 from .module_info import ModuleInfo
+
+logger = logging.getLogger(__name__)
+
+
+def setup_logger(verbose: bool = False) -> None:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("%(levelname)-8s%(message)s")
+    handler.setFormatter(formatter)
+    if verbose:
+        logging.basicConfig(level=logging.DEBUG, handlers=[handler])
+    else:
+        logging.basicConfig(level=logging.INFO, handlers=[handler])
 
 
 class ModuleImporter:
@@ -27,7 +40,7 @@ class ModuleImporter:
         def dfs(module_info: ModuleInfo) -> None:
             if module_info.name in self.imported_modules:
                 return
-            print(module_info.name, file=sys.stderr)
+            logger.info(module_info.name)
             self.imported_modules.add(module_info.name)
 
             nonlocal module_types, body
@@ -48,6 +61,7 @@ class ModuleImporter:
 
 
 def main() -> None:
+    setup_logger()
     parser = argparse.ArgumentParser()
     parser.add_argument("src", type=pathlib.Path, help="Source path")
     parser.add_argument("-o", "--output", type=pathlib.Path, help="output path")
@@ -58,28 +72,26 @@ def main() -> None:
     # 展開するモジュールを探索
     finder = ModuleFinder()
     finder.run_script(str(args.src))
-    imported_modules: List[str] = []
+    modules: Dict[str, ModuleInfo] = dict()
     for module in finder.modules.values():
         if cast(str, module.__name__).split(".")[0] in expand_module:  # type:ignore
-            imported_modules.append(module.__name__)  # type:ignore
-    #
-    modules: Dict[str, ModuleInfo] = dict()
-    for modulename in imported_modules:
-        modules[modulename] = ModuleInfo(modulename, expand_module)
+            modulename = cast(str, module.__name__)  # type: ignore
+            logger.info(f"load {module.__file__}")  # type:ignore
+            modules[modulename] = ModuleInfo(modulename, expand_module)
 
     # 展開するものがないとき
-    print(f"{len(imported_modules)} modules found.", file=sys.stderr)
-    print(*imported_modules, sep="\n", file=sys.stderr)
-    if not imported_modules:
-        print("no module to expand", file=sys.stderr)
+    if len(modules) == 0:
+        logger.info("no module to expand")
         if args.output is None:
             print(args.src.read_text())
         else:
             args.output.write_text(args.src.read_text())
         sys.exit(0)
+    else:
+        logger.info(f"{len(modules)} modules found.")
 
     # src内のimportを探索
-    print("expand start", file=sys.stderr)
+    logger.info("expand start")
     code: str = args.src.read_text()
     imports = search_import(code, "", expand_module)
     import_lines = set()

@@ -1,8 +1,10 @@
 import ast
 import importlib.util
-import sys
 from dataclasses import dataclass
+from logging import getLogger
 from typing import Any, List, Optional
+
+logger = getLogger(__name__)
 
 
 @dataclass
@@ -52,7 +54,8 @@ class ImportVisitor(ast.NodeVisitor):
         if module_name.split(".")[0] in self.expand_module:
             for alias in node.names:
                 if alias.name == "*":
-                    print("cannot expand wildcard import", file=sys.stderr)
+                    logger.error("cannot expand wildcard import")
+                    logger.error(f"module: {module_name}")
                     raise NotImplementedError
                 name = module_name + "." + alias.name
                 try:
