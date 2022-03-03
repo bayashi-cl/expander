@@ -6,6 +6,7 @@ import argparse
 import logging
 import pathlib
 import sys
+import textwrap
 from collections import defaultdict
 from modulefinder import ModuleFinder
 from typing import DefaultDict, Dict, List, Set, cast
@@ -118,7 +119,21 @@ def main() -> None:
         if lineno in expand_lines:
             for importinfo in expand_lines[lineno]:
                 result.append(importer.expand(modules[importinfo.import_from]))
-                if importinfo.asname != importinfo.name:
+                if importinfo.asname == "*":
+                    result.append(
+                        textwrap.dedent(
+                            f"""\
+                            if "__all__" in {importinfo.name}.__dict__:
+                                for _name in {importinfo.name}.__all__:
+                                    locals()[_name] = {importinfo.name}.__dict__[_name]
+                            else:
+                                for _name in {importinfo.name}.__dict__:
+                                    if not _name.startswith("_"):
+                                        locals()[_name] = {importinfo.name}.__dict__[_name]
+                            """
+                        )
+                    )
+                elif importinfo.asname != importinfo.name:
                     result.append(f"{importinfo.asname} = {importinfo.name}\n")
 
     if importer.pkg_info:

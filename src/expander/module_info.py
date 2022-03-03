@@ -1,6 +1,7 @@
 import importlib
 import importlib.metadata
 import pathlib
+import textwrap
 from logging import getLogger
 from typing import Dict, List, Optional, Set, cast
 
@@ -92,7 +93,20 @@ class ModuleInfo:
     def make_aliase(self) -> str:
         res = ""
         for info in self.imports:
-            res += f'{self.name}.__dict__["{info.asname}"] = {info.name}\n'
+            if info.asname == "*":
+                res += textwrap.dedent(
+                    f"""\
+                    if "__all__" in {info.name}.__dict__:
+                        for _name in {info.name}.__all__:
+                            {self.name}.__dict__[_name] = {info.name}.__dict__[_name]
+                    else:
+                        for _name in {info.name}.__dict__:
+                            if not _name.startswith("_"):
+                                {self.name}.__dict__[_name] = {info.name}.__dict__[_name]
+                    """
+                )
+            else:
+                res += f'{self.name}.__dict__["{info.asname}"] = {info.name}\n'
         return res
 
     def make_exec(self) -> str:
