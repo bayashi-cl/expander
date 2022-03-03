@@ -88,5 +88,4 @@ python -m expander <source file> [-o <output file>] [-m <expand module names...>
 python -m expander main.py -o out.py -m yourlib
 ```
 
-
 出力先の指定がない場合は標準出力に出力される

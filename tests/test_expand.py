@@ -1,5 +1,6 @@
 import pathlib
 import subprocess
+import sys
 from typing import Tuple
 
 TESTSDIR = pathlib.Path.cwd() / "tests"
@@ -9,7 +10,7 @@ OUTDIR = TESTSDIR / "out"
 
 def run_python_file(path: pathlib.Path, stdin: str = "") -> str:
     res = subprocess.run(
-        args=["python", path],
+        args=[sys.executable, path],
         stdout=subprocess.PIPE,
         input=stdin,
         text=True,

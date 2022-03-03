@@ -8,6 +8,7 @@
 
 * inspect.getsource はファイルが空だと落ちる？
 * inspect.getsourcefileは空でも動く
+* -> `module.__file__`でよかった
 
 ### modulefinder
 
@@ -27,25 +28,28 @@ finder.modules
 できないこと
 * そのままだと標準ライブラリとか関係ないライブラリも含まれてる
 * 依存関係はわからない
-* 自力で解決するしかなさそう？
+* 自力で解決する
 
 ### ast, astor
 
 * `ast.parse("")`で作成して`.body`に追加していく
 * 最後に`ast.fix_missing_locations()`
 * 3.8以前だとastからコードに戻すにはastorが必要（一応[公式](https://github.com/python/cpython/blob/3.7/Tools/parser/unparse.py)にもある）
+* -> この方法は使わない
 
-ast nodeからどこまでがモジュール名かを判定するやつ
+* ast nodeからどこまでがモジュール名かを判定するやつ
 
 ```python
-if import_from is None:
-        module_name = name
+try:
+    if importlib.util.find_spec(name) is None:
+        # from module import (class|function|...)
+        import_from = module_name
     else:
-        try:
-            module_name = import_from + "." + name
-            importlib.import_module(module_name)
-        except ImportError:
-            module_name = import_from
+        # from module import submodule
+        import_from = name
+except ModuleNotFoundError:
+    # from module import (class|function|...)
+    import_from = module_name
 ```
 
 ### importのast表現からの変換
@@ -95,9 +99,9 @@ import sys
 ...
 # エスケープを適切にやる
 """
-a.b.c["a.b.d"] = a.b.d
-a.b.c["q"] = p
-a.b.c["f"] = a.b.f
+a.b.c.__dict__["a.b.d"] = a.b.d
+a.b.c.__dict__["q"] = p
+a.b.c.__dict__["f"] = a.b.f
 exec(_code_a_b_c, a.b.c.__dict__)
 ```
 * 依存先
@@ -120,21 +124,20 @@ exec(_code_a_b_c, a.b.c.__dict__)
 
 ### import探索パート
 
-* ワイルドカードインポートは`__...__`以外のものを全てimport?
+#### ワイルドカードインポートへの対処
+* `__all__` が定義されている場合はその中にあるもののみimport
+* その他の場合は`_`始まりのもの以外を全てimport
 
 #### 相対インポートへの対処
 
 * `node.level != 0` なら相対インポート
 * 今見てるモジュールの絶対名はわかってる
-* モジュール名の後ろから`node.level`個削ったあと名前を付け足す
-* `__init__.py` のときは名前に`.`を追加する必要がある
-* `hasattr(module, "__path__")`で判定
+* `importlib.util.resolve_name`で解決
 * `from . import ...`の場合はmoduleが`None`になるので注意
 
 ### コード追加パート
 
 * `from __future__ import ...`を先頭に持ってくる必要がある
-* __main__のファイルとimportされるファイルで探索方法が少し異なりそう？
 * 結果はastで持つとコメントが消えるので文字列で持つ
 * それまでに何を展開したのかを持っておく
 * インデントされているimportは壊れる

@@ -54,9 +54,6 @@ class ImportVisitor(ast.NodeVisitor):
         if module_name.split(".")[0] in self.expand_module:
             for alias in node.names:
                 if alias.name == "*":
-                    # logger.error("cannot expand wildcard import")
-                    # logger.error(f"module: {module_name}")
-                    # raise NotImplementedError
                     self.info.append(
                         ImportInfo(
                             module_name, "*", module_name, node.lineno, node.end_lineno
