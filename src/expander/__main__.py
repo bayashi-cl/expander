@@ -30,6 +30,7 @@ class ModuleImporter:
     def __init__(self, modules: Dict[str, ModuleInfo]) -> None:
         self.modules = modules
         self.imported_modules: Set[str] = set()
+        self.pkg_info: List[str] = []
 
     def expand(self, module_info_: ModuleInfo) -> str:
         module_types = ""
@@ -42,6 +43,8 @@ class ModuleImporter:
                 return
             logger.info(module_info.name)
             self.imported_modules.add(module_info.name)
+            if module_info.metadata is not None:
+                self.pkg_info.append(module_info.metadata)
 
             nonlocal module_types, body
             module_types += module_info.module_type
@@ -117,6 +120,13 @@ def main() -> None:
                 result.append(importer.expand(modules[importinfo.import_from]))
                 if importinfo.asname != importinfo.name:
                     result.append(f"{importinfo.asname} = {importinfo.name}\n")
+
+    if importer.pkg_info:
+        result.append("# package infomations\n")
+        for meta in importer.pkg_info:
+            result.append("# " + "-" * 74 + "\n")
+            result.append(meta)
+        result.append("# " + "-" * 74 + "\n")
 
     # 出力
     if args.output is None:

@@ -30,9 +30,7 @@ class ModuleInfo:
     def __init__(self, name: str, expand_module: List[str]) -> None:
         self.name = name
         self.code_valname = f'_code_{name.replace(".", "_")}'
-        self.module_type = (
-            self.make_metadata() + f'{self.name} = ModuleType("{self.name}")\n'
-        )
+        self.module_type = f'{self.name} = ModuleType("{self.name}")\n'
         self.expand_module = expand_module
         self.dependance: Set[str] = set()
 
@@ -40,25 +38,26 @@ class ModuleInfo:
         self.expand_to += self.make_code()
         self.expand_to += self.make_aliase()
         self.expand_to += self.make_exec()
+        self.metadata = self.make_metadata()
 
-    def make_metadata(self) -> str:
+    def make_metadata(self) -> Optional[str]:
         res = []
         if self.name in module_to_pkg_name:
             pkg_name = module_to_pkg_name[self.name]
             meta = importlib.metadata.metadata(pkg_name)
-            res.append(f'# Package infomation of {meta["Name"]}\n')
-            res.append(f'# Version: {meta["Version"]}\n')
-            if "Author" in meta:
-                res.append(f'# Author : {meta["Author"]}\n')
-            res.append(f'# License: {meta["License"]}\n')
+            res.append(f'# {meta["Name"]}\n')
+            for field in ["Version", "Author", "Home-page", "License"]:
+                if field in meta:
+                    res.append(f"#   {field:<9s}: {meta[field]}\n")
             if meta["License"] not in {"CC0"}:
                 license_text = pkg_license[pkg_name]
                 if license_text is not None:
                     res.append("#\n")
                     for line in license_text.splitlines():
-                        res.append(f"# {line}\n")
-            res.append("\n")
-        return "".join(res)
+                        res.append(f"#   {line}\n")
+            return "".join(res)
+        else:
+            return None
 
     def make_code(self) -> str:
         module = importlib.import_module(self.name)
