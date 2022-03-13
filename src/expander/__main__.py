@@ -16,6 +16,23 @@ from .module_info import ModuleInfo
 
 logger = logging.getLogger(__name__)
 
+ATCODER_MODULES = [
+    "Cython",
+    "cython",
+    "decorator",
+    "easy_install",
+    "joblib",
+    "llvmlite",
+    "networkx",
+    "numba",
+    "numpy",
+    "pkg_resources",
+    "pyximport",
+    "scipy",
+    "setuptools",
+    "sklearn",
+]
+
 
 def setup_logger(verbose: bool = False) -> None:
     handler = logging.StreamHandler()
@@ -74,7 +91,7 @@ def main() -> None:
     expand_module: List[str] = args.modules
 
     # 展開するモジュールを探索
-    finder = ModuleFinder()
+    finder = ModuleFinder(excludes=ATCODER_MODULES)
     finder.run_script(str(args.src))
     modules: Dict[str, ModuleInfo] = dict()
     for module in finder.modules.values():
@@ -137,7 +154,7 @@ def main() -> None:
                     result.append(f"{importinfo.asname} = {importinfo.name}\n")
 
     if importer.pkg_info:
-        result.append("# package infomations\n")
+        result.append("\n\n# package infomations\n")
         for meta in importer.pkg_info:
             result.append("# " + "-" * 74 + "\n")
             result.append(meta)
