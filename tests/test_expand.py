@@ -82,6 +82,10 @@ class TestExpandMisc:
         src, out = expand("from_init.py")
         assert run_python_file(src) == run_python_file(out)
 
+    def test_expand_abs_name(self):
+        src, out = expand("abs_name.py")
+        assert run_python_file(src) == run_python_file(out)
+
 
 class TestExpandWildcard:
     def test_wildcard_module_all(self):

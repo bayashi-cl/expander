@@ -34,6 +34,7 @@ class ModuleInfo:
         self.module_type = f'{self.name} = ModuleType("{self.name}")\n'
         self.expand_module = expand_module
         self.dependance: Set[str] = set()
+        self.imported: Set[str] = set()
 
         self.expand_to = ""
         self.expand_to += self.make_code()
@@ -93,7 +94,16 @@ class ModuleInfo:
     def make_aliase(self) -> str:
         res = ""
         for info in self.imports:
-            if info.asname == "*":
+            if info.import_from == info.name:
+                sep = info.name.split(".")
+                for i in range(len(sep)):
+                    module_name = ".".join(sep[: i + 1])
+                    if module_name in self.imported:
+                        continue
+                    self.imported.add(module_name)
+                    res += f'{self.name}.__dict__["{module_name}"] = {module_name}\n'
+
+            elif info.asname == "*":
                 res += textwrap.dedent(
                     f"""\
                     if "__all__" in {info.name}.__dict__:
@@ -105,8 +115,10 @@ class ModuleInfo:
                                 {self.name}.__dict__[_name] = {info.name}.__dict__[_name]
                     """
                 )
-            else:
+
+            elif info.asname not in self.imported:
                 res += f'{self.name}.__dict__["{info.asname}"] = {info.name}\n'
+
         return res
 
     def make_exec(self) -> str:
