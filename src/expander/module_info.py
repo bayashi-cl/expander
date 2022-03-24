@@ -43,6 +43,8 @@ class ModuleInfo:
         self.expand_to += self.make_exec()
         self.metadata = self.make_metadata()
 
+        self.dependance = set(sorted(list(self.dependance)))
+
     def make_metadata(self) -> Optional[str]:
         res = []
         if self.name in module_to_pkg_name:
