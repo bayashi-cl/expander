@@ -1,3 +1,5 @@
+# flake8: noqa
+# type: ignore
 # from testlib_a.sublib_c.sub_ca import *
 from types import ModuleType
 
