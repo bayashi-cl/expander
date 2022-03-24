@@ -1,14 +1,15 @@
-import expander
 import os
 import pathlib
 import subprocess
+
+import expander
 
 srcdir = pathlib.Path.cwd() / "tests" / "src"
 outdir = pathlib.Path.cwd() / "tests" / "out"
 
 
 def test_version():
-    assert expander.__version__ == "0.2.2"
+    assert expander.__version__ == "0.2.3"
 
 
 def test_env_pythonpath():
