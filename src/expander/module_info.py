@@ -35,6 +35,7 @@ class ModuleInfo:
         self.expand_module = expand_module
         self.dependance: Set[str] = set()
         self.imported: Set[str] = set()
+        self.has_all = False
 
         self.expand_to = ""
         self.expand_to += self.make_code()
@@ -63,6 +64,7 @@ class ModuleInfo:
 
     def make_code(self) -> str:
         module = importlib.import_module(self.name)
+        self.has_all = hasattr(module, "__all__")
         code = pathlib.Path(cast(str, module.__file__)).read_text()
 
         # importを探索
@@ -94,7 +96,7 @@ class ModuleInfo:
     def make_aliase(self) -> str:
         res = ""
         for info in self.imports:
-            if info.import_from == info.name:
+            if info.import_from == info.name == info.asname:
                 sep = info.name.split(".")
                 for i in range(len(sep)):
                     module_name = ".".join(sep[: i + 1])
@@ -103,18 +105,22 @@ class ModuleInfo:
                     self.imported.add(module_name)
                     res += f'{self.name}.__dict__["{module_name}"] = {module_name}\n'
 
-            elif info.asname == "*":
-                res += textwrap.dedent(
-                    f"""\
-                    if "__all__" in {info.name}.__dict__:
+            if info.asname == "*":
+                if hasattr(importlib.import_module(info.name), "__all__"):
+                    res += textwrap.dedent(
+                        f"""\
                         for _name in {info.name}.__all__:
                             {self.name}.__dict__[_name] = {info.name}.__dict__[_name]
-                    else:
+                        """
+                    )
+                else:
+                    res += textwrap.dedent(
+                        f"""\
                         for _name in {info.name}.__dict__:
                             if not _name.startswith("_"):
                                 {self.name}.__dict__[_name] = {info.name}.__dict__[_name]
-                    """
-                )
+                        """
+                    )
 
             elif info.asname not in self.imported:
                 res += f'{self.name}.__dict__["{info.asname}"] = {info.name}\n'

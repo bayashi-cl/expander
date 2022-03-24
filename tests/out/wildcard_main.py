@@ -45,29 +45,17 @@ _code_testlib_a_sublib_c = """
 # from .sub_ca import *
 # from .sub_cb import *
 """
-if "__all__" in testlib_a.sublib_c.sub_ca.__dict__:
-    for _name in testlib_a.sublib_c.sub_ca.__all__:
-        testlib_a.sublib_c.__dict__[_name] = testlib_a.sublib_c.sub_ca.__dict__[_name]
-else:
-    for _name in testlib_a.sublib_c.sub_ca.__dict__:
-        if not _name.startswith("_"):
-            testlib_a.sublib_c.__dict__[_name] = testlib_a.sublib_c.sub_ca.__dict__[_name]
-if "__all__" in testlib_a.sublib_c.sub_cb.__dict__:
-    for _name in testlib_a.sublib_c.sub_cb.__all__:
+for _name in testlib_a.sublib_c.sub_ca.__all__:
+    testlib_a.sublib_c.__dict__[_name] = testlib_a.sublib_c.sub_ca.__dict__[_name]
+for _name in testlib_a.sublib_c.sub_cb.__dict__:
+    if not _name.startswith("_"):
         testlib_a.sublib_c.__dict__[_name] = testlib_a.sublib_c.sub_cb.__dict__[_name]
-else:
-    for _name in testlib_a.sublib_c.sub_cb.__dict__:
-        if not _name.startswith("_"):
-            testlib_a.sublib_c.__dict__[_name] = testlib_a.sublib_c.sub_cb.__dict__[_name]
 exec(_code_testlib_a_sublib_c, testlib_a.sublib_c.__dict__)
 
-if "__all__" in testlib_a.sublib_c.sub_cb.__dict__:
-    for _name in testlib_a.sublib_c.sub_cb.__all__:
+
+for _name in testlib_a.sublib_c.sub_cb.__dict__:
+    if not _name.startswith("_"):
         locals()[_name] = testlib_a.sublib_c.sub_cb.__dict__[_name]
-else:
-    for _name in testlib_a.sublib_c.sub_cb.__dict__:
-        if not _name.startswith("_"):
-            locals()[_name] = testlib_a.sublib_c.sub_cb.__dict__[_name]
 
 func()
 print(variable)
