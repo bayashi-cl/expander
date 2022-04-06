@@ -5,23 +5,13 @@ from types import ModuleType
 
 testlib_a = ModuleType("testlib_a")
 testlib_a.sublib_c = ModuleType("testlib_a.sublib_c")
-testlib_a.sublib_c.sub_cb = ModuleType("testlib_a.sublib_c.sub_cb")
 testlib_a.sublib_c.sub_ca = ModuleType("testlib_a.sublib_c.sub_ca")
+testlib_a.sublib_c.sub_cb = ModuleType("testlib_a.sublib_c.sub_cb")
 
 _code_testlib_a = """
 __version__ = "1.0.0"
 """
 exec(_code_testlib_a, testlib_a.__dict__)
-
-_code_testlib_a_sublib_c_sub_cb = """
-def func():
-    print(__name__)
-
-
-_under_score = "under_score"
-variable = "variable"
-"""
-exec(_code_testlib_a_sublib_c_sub_cb, testlib_a.sublib_c.sub_cb.__dict__)
 
 _code_testlib_a_sublib_c_sub_ca = """
 __all__ = ("include_def", "include_variable")
@@ -40,6 +30,16 @@ include_variable = "include_variable"
 exclude_variable = "exclude_variable"
 """
 exec(_code_testlib_a_sublib_c_sub_ca, testlib_a.sublib_c.sub_ca.__dict__)
+
+_code_testlib_a_sublib_c_sub_cb = """
+def func():
+    print(__name__)
+
+
+_under_score = "under_score"
+variable = "variable"
+"""
+exec(_code_testlib_a_sublib_c_sub_cb, testlib_a.sublib_c.sub_cb.__dict__)
 
 _code_testlib_a_sublib_c = """
 # from .sub_ca import *

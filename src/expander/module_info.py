@@ -33,7 +33,7 @@ class ModuleInfo:
         self.code_valname = f'_code_{name.replace(".", "_")}'
         self.module_type = f'{self.name} = ModuleType("{self.name}")\n'
         self.expand_module = expand_module
-        self.dependance: Set[str] = set()
+        self.dependance: List[str] = list()
         self.imported: Set[str] = set()
         self.has_all = False
 
@@ -43,7 +43,7 @@ class ModuleInfo:
         self.expand_to += self.make_exec()
         self.metadata = self.make_metadata()
 
-        self.dependance = set(sorted(list(self.dependance)))
+        self.dependance = sorted(list(set(self.dependance)))
 
     def make_metadata(self) -> Optional[str]:
         res = []
@@ -78,7 +78,7 @@ class ModuleInfo:
         for info in self.imports:
             for lineno in range(info.lineno - 1, cast(int, info.end_lineno)):
                 import_lines.add(lineno)
-            self.dependance.add(info.import_from)
+            self.dependance.append(info.import_from)
 
         # エスケープ処理
         code = code.replace("\\", "\\\\")
