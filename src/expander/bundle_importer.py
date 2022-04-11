@@ -189,14 +189,13 @@ BundleImporter.add_module(
     code_lines.insert(insert_point, "\n".join(result))
 
     infomations: List[str] = []
-    if bundled:
-        for top_package in bundled:
-            info = make_metadata(top_package)
-            if info is not None:
-                if not infomations:
-                    code_lines.append("\n\n# package infomations\n")
-                    code_lines.append("# " + "-" * 77 + "\n")
-                code_lines.append(info)
-                code_lines.append("# " + "-" * 77 + "\n")
+    for top_package in sorted(list(bundled)):
+        info = make_metadata(top_package)
+        if info is not None:
+            if not infomations:
+                infomations.append("\n\n# package infomations\n")
+                infomations.append("# " + "-" * 77 + "\n")
+            infomations.append(info)
+            infomations.append("# " + "-" * 77 + "\n")
 
     return "".join(code_lines + infomations)
