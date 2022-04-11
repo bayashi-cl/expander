@@ -18,14 +18,17 @@ finder = ModuleFinder()
 finder.run_script("path/to/source.py")
 finder.modules
 ```
+
 で読み込まれているmoduleの一覧が取れる。
 
 できること
+
 * 行きがけ順っぽい
 * それならモジュール生成部分に使える
 * ロードされるファイルすべてを含む
 
 できないこと
+
 * そのままだと標準ライブラリとか関係ないライブラリも含まれてる
 * 依存関係はわからない
 * 自力で解決する
@@ -77,6 +80,7 @@ except ModuleNotFoundError:
 * インストールされたパッケージ一覧から該当するモジュール名を探す
 
 ## 方針
+
 ### ModuleInfo作成パート
 
 * modulefinderで展開するファイルを列挙 これがグラフの頂点になる
@@ -90,6 +94,7 @@ except ModuleNotFoundError:
 * モジュール名 `a.b.c`
 * ModuleType文字列 `a.b.c = ModuleType("a.b.c")`
 * 展開先の文字列
+
 ```python
 _code_a_b_c = """
 import sys
@@ -104,10 +109,12 @@ a.b.c.__dict__["q"] = p
 a.b.c.__dict__["f"] = a.b.f
 exec(_code_a_b_c, a.b.c.__dict__)
 ```
+
 * 依存先
 `{"a.b.d", "p", "a.b"}`
 
 #### 展開先文字列作成
+
 * code, asname, exec の3つ
 * code
     1. inspect.getsourcefileでパスを取得 -> 読み込み
@@ -125,6 +132,7 @@ exec(_code_a_b_c, a.b.c.__dict__)
 ### import探索パート
 
 #### ワイルドカードインポートへの対処
+
 * `__all__` が定義されている場合はその中にあるもののみimport
 * その他の場合は`_`始まりのもの以外を全てimport
 
