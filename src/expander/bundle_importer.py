@@ -195,8 +195,8 @@ BundleImporter.add_module(
             if info is not None:
                 if not infomations:
                     code_lines.append("\n\n# package infomations\n")
-                    code_lines.append("# " + "-" * 74 + "\n")
+                    code_lines.append("# " + "-" * 77 + "\n")
                 code_lines.append(info)
-                code_lines.append("# " + "-" * 74 + "\n")
+                code_lines.append("# " + "-" * 77 + "\n")
 
     return "".join(code_lines + infomations)
