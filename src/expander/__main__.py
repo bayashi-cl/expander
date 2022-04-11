@@ -1,5 +1,4 @@
-"""\
-source expander
+"""source expander
 """
 
 import argparse
@@ -7,6 +6,7 @@ import logging
 import pathlib
 import sys
 
+from .bundle_importer import importer_expand
 from .expand import expand
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,8 @@ def main() -> None:
     parser.add_argument("-m", "--modules", nargs="*", help="list of expand module")
     args = parser.parse_args()
 
-    result = expand(args.src, args.modules)
+    # result = expand(args.src, args.modules)
+    result = importer_expand(args.src, args.modules)
 
     # 出力
     if args.output is None:
