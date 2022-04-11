@@ -1,34 +1,44 @@
-[![pytest](https://github.com/bayashi-cl/expander/actions/workflows/pytest.yml/badge.svg)](https://github.com/bayashi-cl/expander/actions/workflows/pytest.yml)
-
 # expander
+
+[![pytest](https://github.com/bayashi-cl/expander/actions/workflows/pytest.yml/badge.svg)](https://github.com/bayashi-cl/expander/actions/workflows/pytest.yml)
 
 Convert Python source code into a single source that can be submitted to online judges.
 
-[Submission using this tool.](https://atcoder.jp/contests/abc238/submissions/29410034)
+[Submission using this tool.](https://github.com/bayashi-cl/expander/blob/main/README-en.md)
 
 <details>
 <summary>Before expand.</summary>
 
 ```python
-import sys
+from byslib.core.config import procon_setup
+from byslib.core.const import IINF, MOD
+from byslib.core.fastio import debug, int1, readline, sinput
+from byslib.graph.breadth_first_search import breadth_first_search
+from byslib.graph.edge import AdjacencyList
 
-from byslib.core import IINF, MOD, debug, sinput
-from byslib.data.union_find import UnionFindTree
 
+@procon_setup
+def main(**kwargs) -> None:
+    n, m, k = map(int, readline().split())
+    h = list(map(int, readline().split()))
+    c = list(map(int1, readline().split()))
+    graph = AdjacencyList.init(n)
+    for _ in range(m):
+        a, b = map(int1, readline().split())
+        if h[a] > h[b]:
+            a, b = b, a
+        graph.add_edge(a, b, 1)
 
-def main() -> None:
-    n, q = map(int, sinput().split())
-    uft = UnionFindTree(n + 1)
-    for _ in range(q):
-        l, r = map(int, sinput().split())
-        uft.union(l - 1, r)
-    print("Yes" if uft.same(0, n) else "No")
+    cost, _ = breadth_first_search(graph, c)
+    print(*map(lambda x: -1 if x == IINF else x, cost), sep="\n")
 
 
 if __name__ == "__main__":
-    sys.setrecursionlimit(10**6)
-    main()
+    t = 1
+    # t = int(readline())
+    main(t)
 ```
+
 </details>
 
 ## Attention
@@ -40,17 +50,12 @@ if __name__ == "__main__":
 
 <https://github.com/not522/ac-library-python/blob/master/atcoder/__main__.py>
 
-
 **Modifications**
 
 * Make the specified module expandable.
 * Allow `__future__` modules to be imported correctly.
 * Allow escaping in the source (such as newline characters).
-
-## What you can't do
-
-* Indented imports will be broken.
-* If you don't use import statements (like importlib), it will break.
+* Generate .pyc file if able.
 
 ## Performance
 
@@ -70,20 +75,20 @@ Problem: [Shortest Path](https://judge.yosupo.jp/problem/shortest_path)
 
 ## How to install
 
-```
+```sh
 pip install git+https://github.com/bayashi-cl/expander
 ```
 
 ## Usage
 
-```
+```sh
 python -m expander <source file> [-o <output file>] [-m <expand module names...>]
 ```
 
 Example:
-```
+
+```sh
 python -m expander main.py -o out.py -m yourlib
 ```
-
 
 If no output destination is specified, the output will be sent to standard output.
