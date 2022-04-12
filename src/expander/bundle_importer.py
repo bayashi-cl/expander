@@ -1,5 +1,19 @@
+"""Bundled code generator
+
+Note:
+    Generate a `Importer` that allows import from string objects in the
+    source, and register the modules to be bundled in it.
+
+    BundledImporter inherits importlib.machinery.SourceFileLoader which
+    is used when importinga normal module, and provides source code from
+    its own dictionary instead of the file system.
+
+    see: https://docs.python.org/3/reference/import.html
+"""
+
 import ast
 import importlib.metadata
+import sys
 from functools import lru_cache
 from logging import getLogger
 from modulefinder import ModuleFinder
@@ -10,7 +24,7 @@ from pkg_resources import Environment
 
 logger = getLogger(__name__)
 
-CODE_BUNDLE_IMPORTER = '''\
+BUNDLE_IMPORTER_CODE = '''\
 import os
 import sys
 from importlib.machinery import ModuleSpec, SourceFileLoader
@@ -57,25 +71,18 @@ class BundleImporter(SourceFileLoader):
 
 '''
 
-ATCODER_MODULES = [
-    "Cython",
-    "cython",
-    "decorator",
-    "easy_install",
-    "joblib",
-    "llvmlite",
-    "networkx",
-    "numba",
-    "numpy",
-    "pkg_resources",
-    "pyximport",
-    "scipy",
-    "setuptools",
-    "sklearn",
-]
+# These modules cannot be analyzed by modulefinder due to an error.
+EXCLUDE_MODULES = ["networkx", "numba", "sklearn"]
 
 
 class FutureImportFinder(ast.NodeVisitor):
+    """Find the bottom of future statement.
+
+    Note:
+        A future statement must appear near the top of the module.
+        see: https://docs.python.org/3/reference/simple_stmts.html#future
+    """
+
     def __init__(self) -> None:
         self.last_future = 0
 
@@ -98,6 +105,15 @@ class FutureImportFinder(ast.NodeVisitor):
 
 @lru_cache(maxsize=1)
 def get_package_info() -> Tuple[Dict[str, str], Dict[str, Optional[str]]]:
+    """Get the relationship between module and package.
+
+    Note:
+        Some modules have a different module name than the package name
+        (e.g. scikit-learn <-> sklearn). The package name is needed to
+        get the package metadata, but usually you can't get the package
+        name from the module name. Therefore, check the module name
+        included in all installed packages.
+    """
     module_to_pkg_name: Dict[str, str] = dict()
     pkg_license: Dict[str, Optional[str]] = dict()
     for pkg_name, env in Environment()._distmap.items():  # type: ignore
@@ -147,30 +163,37 @@ def importer_expand(source: Path, expand_module: List[str]) -> str:
 
     Note:
         This module is intended to be used in competition programming.
-
     """
-    finder = ModuleFinder(excludes=ATCODER_MODULES)
+    finder = ModuleFinder(excludes=EXCLUDE_MODULES)
     finder.run_script(str(source))
 
     result: List[str] = []
     bundled: Set[str] = set()
     for module in finder.modules.values():
         name: str = module.__name__  # type: ignore
-        file: str = module.__file__  # type: ignore
+        file: Optional[str] = module.__file__  # type: ignore
         is_package = module.__path__ is not None  # type: ignore
         top_package = name.split(".")[0]
 
+        if file is None:
+            # built-in module
+            continue
+
         if top_package in expand_module:
+            if not file.endswith(".py"):
+                logger.error("Cannot bundle extention module.")
+                sys.exit(1)
+
             bundled.add(top_package)
             logger.info(f"Load `{name}` from {file}")
             if not result:
-                result.append(CODE_BUNDLE_IMPORTER)
+                result.append(BUNDLE_IMPORTER_CODE)
 
             module_code = Path(file).read_text()
             module_code = module_code.replace("\\", "\\\\")
             module_code = module_code.replace('"""', '\\"""')
 
-            add_modue_code = f'''\
+            add_module_code = f'''\
 BundleImporter.add_module(
     fullname="{name}",
     is_package={is_package},
@@ -178,7 +201,7 @@ BundleImporter.add_module(
 {module_code}""",
 )
 '''
-            result.append(add_modue_code)
+            result.append(add_module_code)
 
     if result:
         result.append("sys.meta_path.append(BundleImporter)\n\n")
