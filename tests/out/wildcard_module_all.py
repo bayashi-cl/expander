@@ -34,10 +34,12 @@ class BundleImporter(SourceFileLoader):
 
     def get_data(self, path):
         try:
-            return self.module_code[path]
-        except KeyError:
-            with open(path, "rb") as file:
-                return file.read()
+            return super().get_data(path)
+        except OSError:
+            try:
+                return self.module_code[path]
+            except KeyError:
+                raise OSError
 
     def path_stats(self, path):
         return {"mtime": os.stat(__file__).st_mtime, "size": None}
