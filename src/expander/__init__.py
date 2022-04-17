@@ -1,4 +1,4 @@
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 from .bundle_importer import importer_expand
 from .expand import expand
 

@@ -2,8 +2,6 @@ import os
 import pathlib
 import subprocess
 
-import expander
-
 srcdir = pathlib.Path.cwd() / "tests" / "src"
 outdir = pathlib.Path.cwd() / "tests" / "out"
 
