@@ -97,12 +97,36 @@ class FutureImportFinder(ast.NodeVisitor):
 
             self.last_future = max(self.last_future, end)
 
-    @classmethod
-    def search_insert_point(cls, code: str) -> int:
-        tree = ast.parse(code)
-        visitor = cls()
-        visitor.visit(tree)
-        return visitor.last_future
+
+def search_insert_point(code: str) -> int:
+    tree = ast.parse(code)
+
+    # future statement
+    visitor = FutureImportFinder()
+    visitor.visit(tree)
+
+    # docstring
+    docstring = 0
+    if tree.body:
+        top_node = tree.body[0]
+        if (
+            isinstance(top_node, ast.Expr)
+            and isinstance(top_node.value, ast.Constant)
+            and isinstance(top_node.value.value, str)
+        ):
+            if top_node.end_lineno is None:
+                docstring = top_node.lineno
+            else:
+                docstring = top_node.end_lineno
+
+    # top comment
+    comment = 0
+    code_lines = code.splitlines()
+    n_lines = len(code_lines)
+    while comment < n_lines and code_lines[comment].rstrip().startswith("#"):
+        comment += 1
+
+    return max(visitor.last_future, docstring, comment)
 
 
 @lru_cache(maxsize=1)
@@ -194,24 +218,25 @@ def importer_expand(source: Path, expand_module: List[str]) -> str:
             module_code = Path(file).read_text()
             module_code = module_code.replace("\\", "\\\\")
             module_code = module_code.replace('"""', '\\"""')
-
-            add_module_code = f'''\
-BundleImporter.add_module(
-    fullname="{name}",
-    is_package={is_package},
-    code="""\\
-{module_code}""",
-)
-'''
-            result.append(add_module_code)
+            result.append(
+                "BundleImporter.add_module(\n"
+                f'    fullname="{name}",\n'
+                f"    is_package={is_package},\n"
+                '    code="""\\\n'
+                f'{module_code}""",\n'
+                ")\n"
+            )
 
     if result:
         result.append("sys.meta_path.append(BundleImporter)\n\n")
 
     code = source.read_text()
-    insert_point = FutureImportFinder.search_insert_point(code)
+    insert_point = search_insert_point(code)
     code_lines = code.splitlines(keepends=True)
-    code_lines.insert(insert_point, "\n".join(result))
+    if insert_point == 0:
+        code_lines.insert(insert_point, "\n".join(result))
+    else:
+        code_lines.insert(insert_point, "\n" + "\n".join(result))
 
     infomations: List[str] = []
     for top_package in sorted(list(bundled)):
