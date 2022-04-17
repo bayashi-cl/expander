@@ -195,8 +195,7 @@ def importer_expand(source: Path, expand_module: List[str]) -> str:
 
     result: List[str] = []
     bundled: Set[str] = set()
-    for module in finder.modules.values():
-        name: str = module.__name__  # type: ignore
+    for name, module in finder.modules.items():
         file: Optional[str] = module.__file__  # type: ignore
         is_package = module.__path__ is not None  # type: ignore
         top_package = name.split(".")[0]
