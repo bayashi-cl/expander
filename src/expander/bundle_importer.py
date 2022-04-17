@@ -5,7 +5,7 @@ Note:
     source, and register the modules to be bundled in it.
 
     BundledImporter inherits importlib.machinery.SourceFileLoader which
-    is used when importinga normal module, and provides source code from
+    is used when importing normal modules. It provides source code from
     its own dictionary instead of the file system.
 
     see: https://docs.python.org/3/reference/import.html
