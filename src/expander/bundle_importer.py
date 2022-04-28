@@ -14,13 +14,11 @@ Note:
 import ast
 import importlib.metadata
 import sys
-from functools import lru_cache
+import textwrap
 from logging import getLogger
 from modulefinder import ModuleFinder
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
-
-from pkg_resources import Environment
+from typing import Any, List, Optional, Set
 
 logger = getLogger(__name__)
 
@@ -129,9 +127,8 @@ def search_insert_point(code: str) -> int:
     return max(visitor.last_future, docstring, comment)
 
 
-@lru_cache(maxsize=1)
-def get_package_info() -> Tuple[Dict[str, str], Dict[str, Optional[str]]]:
-    """Get the relationship between module and package.
+def make_info(bundled_modules: Set[str]) -> Optional[str]:
+    """Get package metadatas.
 
     Note:
         Some modules have a different module name than the package name
@@ -140,41 +137,36 @@ def get_package_info() -> Tuple[Dict[str, str], Dict[str, Optional[str]]]:
         name from the module name. Therefore, check the module name
         included in all installed packages.
     """
-    module_to_pkg_name: Dict[str, str] = dict()
-    pkg_license: Dict[str, Optional[str]] = dict()
-    for pkg_name, env in Environment()._distmap.items():  # type: ignore
-        for dist in env:
-            try:
-                pkg_license[pkg_name] = dist._provider.get_metadata("LICENSE")
-            except Exception:
-                pkg_license[pkg_name] = None
-            try:
-                for top in dist._provider.get_metadata_lines("top_level.txt"):
-                    module_to_pkg_name[top] = pkg_name
-            except Exception:
-                pass
-    return module_to_pkg_name, pkg_license
+    pkgs = set()
+    for dist in importlib.metadata.distributions():
+        tops = dist.read_text("top_level.txt")
+        if tops is None:
+            continue
+        for top in tops.splitlines():
+            if top in bundled_modules:
+                pkgs.add(dist.metadata["Name"])
 
-
-def make_metadata(package: str) -> Optional[str]:
-    module_to_pkg_name, pkg_license = get_package_info()
-    res = []
-    if package in module_to_pkg_name:
-        pkg_name = module_to_pkg_name[package]
-        meta = importlib.metadata.metadata(pkg_name)
-        res.append(f'# {meta["Name"]}\n')
-        for field in ["Version", "Author", "Home-page", "License"]:
-            if field in meta:
-                res.append(f"#   {field:<9s}: {meta[field]}\n")
-        if meta["License"] not in {"CC0"}:
-            license_text = pkg_license[pkg_name]
-            if license_text is not None:
-                res.append("#\n")
-                for line in license_text.splitlines():
-                    res.append(f"#   {line}\n")
-        return "".join(res)
-    else:
+    if not pkgs:
         return None
+
+    sep = "# " + "-" * 77 + "\n"
+    result: List[str] = ["\n# package infomations\n", sep]
+    for pkg in sorted(list(pkgs)):
+        dist = importlib.metadata.distribution(pkg)
+        result.append(f'# {dist.metadata["Name"]}\n')
+        for field in ["Version", "Author", "Home-page", "License"]:
+            if field in dist.metadata:
+                result.append(f"#   {field:<9s}: {dist.metadata[field]}\n")
+
+        if dist.metadata["License"] not in {"CC0"}:
+            license_text = dist.read_text("LICENSE")
+            if license_text is not None:
+                result.append("#\n")
+                result.append(textwrap.indent(license_text, "#   ", lambda l: True))
+
+        result.append(sep)
+
+    return "".join(result)
 
 
 def importer_expand(source: Path, expand_module: List[str]) -> str:
@@ -237,14 +229,8 @@ def importer_expand(source: Path, expand_module: List[str]) -> str:
     else:
         code_lines.insert(insert_point, "\n" + "\n".join(result))
 
-    infomations: List[str] = []
-    for top_package in sorted(list(bundled)):
-        info = make_metadata(top_package)
-        if info is not None:
-            if not infomations:
-                infomations.append("\n\n# package infomations\n")
-                infomations.append("# " + "-" * 77 + "\n")
-            infomations.append(info)
-            infomations.append("# " + "-" * 77 + "\n")
+    info = make_info(bundled)
+    if info is not None:
+        code_lines.append(info)
 
-    return "".join(code_lines + infomations)
+    return "".join(code_lines)
