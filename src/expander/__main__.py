@@ -1,13 +1,24 @@
 """source expander
-"""
 
+Note:
+    usage: __main__.py [-h] [-o OUTPUT] [-m [MODULES [MODULES ...]]] src
+
+    positional arguments:
+    src                   Source path
+
+    optional arguments:
+    -h, --help            show this help message and exit
+    -o OUTPUT, --output OUTPUT
+                            output path
+    -m [MODULES [MODULES ...]], --modules [MODULES [MODULES ...]]
+                            list of expand module
+"""
 import argparse
 import logging
 import pathlib
 import sys
 
 from .bundle_importer import importer_expand
-from .expand import expand
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +41,8 @@ def main() -> None:
     parser.add_argument("-m", "--modules", nargs="*", help="list of expand module")
     args = parser.parse_args()
 
-    # result = expand(args.src, args.modules)
     result = importer_expand(args.src, args.modules)
 
-    # 出力
     if args.output is None:
         sys.stdout.write(result)
     else:

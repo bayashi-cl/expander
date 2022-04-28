@@ -1,3 +1,11 @@
+"""expand
+
+Note:
+    **deprecated**
+    This module is deprecated. Use `bundle_importer`.
+
+    Simulate python's import system manually.
+"""
 import logging
 import pathlib
 import textwrap

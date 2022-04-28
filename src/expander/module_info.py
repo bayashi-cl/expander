@@ -1,3 +1,11 @@
+"""module info
+
+Note:
+    **deprecated**
+    This module is deprecated. Use `bundle_importer`.
+
+    Simulate python's import system manually.
+"""
 import importlib
 import importlib.metadata
 import pathlib
