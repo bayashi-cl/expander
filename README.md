@@ -68,13 +68,13 @@ Problem: [Shortest Path](https://judge.yosupo.jp/problem/shortest_path)
 
 |CPython  |Submission                                 |Time   |
 |:--------|:------------------------------------------|:------|
-|expander |<https://judge.yosupo.jp/submission/79094> |2745 ms|
-|pure     |<https://judge.yosupo.jp/submission/79093> |2970 ms|
+|expander |<https://judge.yosupo.jp/submission/87683> |1800 ms|
+|pure     |<https://judge.yosupo.jp/submission/87687> |1821 ms|
 
 |PyPy     |Submission                                 |Time   |
 |:--------|:------------------------------------------|:------|
-|expander |<https://judge.yosupo.jp/submission/79096> |913 ms |
-|pure     |<https://judge.yosupo.jp/submission/79097> |918 ms |
+|expander |<https://judge.yosupo.jp/submission/87684> |974 ms |
+|pure     |<https://judge.yosupo.jp/submission/87685> |928 ms |
 
 ## インストール
 
