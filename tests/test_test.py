@@ -6,18 +6,15 @@ srcdir = pathlib.Path.cwd() / "tests" / "src"
 outdir = pathlib.Path.cwd() / "tests" / "out"
 
 
-def test_env_pythonpath():
+def test_env_pythonpath() -> None:
     assert os.environ["PYTHONPATH"] == str(pathlib.Path.cwd() / "tests" / "testlib")
 
 
-def test_testlib_import():
-    try:
-        subprocess.run(["python", srcdir / "normal.py"], check=True)
-    except subprocess.CalledProcessError as e:
-        assert False, e
+def test_testlib_import() -> None:
+    subprocess.run(["python", srcdir / "normal.py"], check=True)  # noqa: S603, S607
 
 
-def test_testlib_expand():
+def test_testlib_expand() -> None:
     subprocess.run(
         args=[
             "python",

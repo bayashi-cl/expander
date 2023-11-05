@@ -3,6 +3,8 @@ import subprocess
 import sys
 from typing import Tuple
 
+import pytest
+
 TESTSDIR = pathlib.Path.cwd() / "tests"
 SRCDIR = TESTSDIR / "src"
 OUTDIR = TESTSDIR / "out"
@@ -37,79 +39,59 @@ def expand(name: str) -> Tuple[pathlib.Path, pathlib.Path]:
     return SRCDIR / name, OUTDIR / name
 
 
-class TestExpandNormal:
-    def test_normal(self):
-        src, out = expand("normal.py")
+class TestExpand:
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "normal.py",
+            "import_as.py",
+            "import_func_as.py",
+            "import_func.py",
+        ],
+    )
+    def test_normal(self, path: str) -> None:
+        src, out = expand(path)
         assert run_python_file(src) == run_python_file(out)
 
-    def test_import_as(self):
-        src, out = expand("import_as.py")
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "relative_from_samedir.py",
+            "relative_from_parentdir.py",
+            "relative_from_childdir.py",
+        ],
+    )
+    def test_relative(self, path: str) -> None:
+        src, out = expand(path)
         assert run_python_file(src) == run_python_file(out)
 
-    def test_import_func_as(self):
-        src, out = expand("import_func_as.py")
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "wildcard_module_all.py",
+            "wildcard_module.py",
+            "wildcard_main_all.py",
+            "wildcard_main.py",
+        ],
+    )
+    def test_wildcard(self, path: str) -> None:
+        src, out = expand(path)
         assert run_python_file(src) == run_python_file(out)
 
-    def test_import_func(self):
-        src, out = expand("import_func.py")
-        assert run_python_file(src) == run_python_file(out)
-
-
-class TestExpandRelative:
-    def test_relative_from_samedir(self):
-        src, out = expand("relative_from_samedir.py")
-        assert run_python_file(src) == run_python_file(out)
-
-    def test_relative_from_parentdir(self):
-        src, out = expand("relative_from_parentdir.py")
-        assert run_python_file(src) == run_python_file(out)
-
-    def test_relative_from_childdir(self):
-        src, out = expand("relative_from_childdir.py")
-        assert run_python_file(src) == run_python_file(out)
-
-
-class TestExpandMisc:
-    def test_expand_only_std(self):
-        src, out = expand("only_std.py")
-        assert run_python_file(src) == run_python_file(out)
-
-    def test_expand_otherlib(self):
-        src, out = expand("otherlib.py")
-        assert run_python_file(src) == run_python_file(out)
-
-    def test_expand_from_init(self):
-        src, out = expand("from_init.py")
-        assert run_python_file(src) == run_python_file(out)
-
-    def test_expand_abs_name(self):
-        src, out = expand("abs_name.py")
-        assert run_python_file(src) == run_python_file(out)
-
-    def test_expand_future(self):
-        src, out = expand("future.py")
-        assert run_python_file(src) == run_python_file(out)
-
-
-class TestExpandWildcard:
-    def test_wildcard_module_all(self):
-        src, out = expand("wildcard_module_all.py")
-        assert run_python_file(src) == run_python_file(out)
-
-    def test_wildcard_module(self):
-        src, out = expand("wildcard_module.py")
-        assert run_python_file(src) == run_python_file(out)
-
-    def test_wildcard_main_all(self):
-        src, out = expand("wildcard_main_all.py")
-        assert run_python_file(src) == run_python_file(out)
-
-    def test_wildcard_main(self):
-        src, out = expand("wildcard_main.py")
-        assert run_python_file(src) == run_python_file(out)
-
-
-class TestFuture:
-    def test_input(self):
+    def test_input(self) -> None:
         src, out = expand("input.py")
         assert run_python_file(src, "5") == run_python_file(out, "5")
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "only_std.py",
+            "otherlib.py",
+            "from_init.py",
+            "abs_name.py",
+            "future.py",
+        ],
+    )
+    def test_misc(self, path: str) -> None:
+        src, out = expand(path)
+        assert run_python_file(src) == run_python_file(out)

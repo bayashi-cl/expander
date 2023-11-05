@@ -23,7 +23,7 @@ from .bundle_importer import importer_expand
 logger = logging.getLogger(__name__)
 
 
-def setup_logger(verbose: bool = False) -> None:
+def setup_logger(*, verbose: bool = False) -> None:
     handler = logging.StreamHandler()
     formatter = logging.Formatter("%(levelname)-8s%(message)s")
     handler.setFormatter(formatter)
