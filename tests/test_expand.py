@@ -1,7 +1,6 @@
 import pathlib
 import subprocess
 import sys
-from typing import Tuple
 
 import pytest
 
@@ -21,7 +20,7 @@ def run_python_file(path: pathlib.Path, stdin: str = "") -> str:
     return res.stdout
 
 
-def expand(name: str) -> Tuple[pathlib.Path, pathlib.Path]:
+def expand(name: str) -> tuple[pathlib.Path, pathlib.Path]:
     subprocess.run(
         args=[
             "python",

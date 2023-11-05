@@ -151,7 +151,7 @@ def make_info(bundled_modules: set[str]) -> str | None:
         result.append(f'# {dist.metadata["Name"]}\n')
         for field in ["Version", "Author", "Home-page", "License"]:
             if field in dist.metadata:
-                result.append(f"#   {field:<9s}: {dist.metadata[field]}\n")
+                result.append(f"#   {field:<9s}: {dist.metadata[field]}\n")  # noqa: PERF401
 
         result += get_license_string(dist)
         result.append(sep)
