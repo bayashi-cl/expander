@@ -11,14 +11,16 @@ Note:
     see: https://docs.python.org/3/reference/import.html
 """
 
+from __future__ import annotations
+
 import ast
 import importlib.metadata
 import sys
-import textwrap
 from logging import getLogger
 from modulefinder import ModuleFinder
 from pathlib import Path
-from typing import Any, List, Optional, Set
+
+from .license_string import get_license_string
 
 logger = getLogger(__name__)
 
@@ -86,13 +88,9 @@ class FutureImportFinder(ast.NodeVisitor):
     def __init__(self) -> None:
         self.last_future = 0
 
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> Any:
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:  # noqa: N802
         if node.module == "__future__":
-            if node.end_lineno is None:
-                end = node.lineno
-            else:
-                end = node.end_lineno
-
+            end = node.lineno if node.end_lineno is None else node.end_lineno
             self.last_future = max(self.last_future, end)
 
 
@@ -112,10 +110,7 @@ def search_insert_point(code: str) -> int:
             and isinstance(top_node.value, ast.Constant)
             and isinstance(top_node.value.value, str)
         ):
-            if top_node.end_lineno is None:
-                docstring = top_node.lineno
-            else:
-                docstring = top_node.end_lineno
+            docstring = top_node.lineno if top_node.end_lineno is None else top_node.end_lineno
 
     # top comment
     comment = 0
@@ -127,7 +122,7 @@ def search_insert_point(code: str) -> int:
     return max(visitor.last_future, docstring, comment)
 
 
-def make_info(bundled_modules: Set[str]) -> Optional[str]:
+def make_info(bundled_modules: set[str]) -> str | None:
     """Get package metadatas.
 
     Note:
@@ -150,26 +145,21 @@ def make_info(bundled_modules: Set[str]) -> Optional[str]:
         return None
 
     sep = "# " + "-" * 77 + "\n"
-    result: List[str] = ["\n# package infomations\n", sep]
-    for pkg in sorted(list(pkgs)):
+    result = ["\n# package informations\n", sep]
+    for pkg in sorted(pkgs):
         dist = importlib.metadata.distribution(pkg)
         result.append(f'# {dist.metadata["Name"]}\n')
         for field in ["Version", "Author", "Home-page", "License"]:
             if field in dist.metadata:
-                result.append(f"#   {field:<9s}: {dist.metadata[field]}\n")
+                result.append(f"#   {field:<9s}: {dist.metadata[field]}\n")  # noqa: PERF401
 
-        if dist.metadata["License"] not in {"CC0"}:
-            license_text = dist.read_text("LICENSE")
-            if license_text is not None:
-                result.append("#\n")
-                result.append(textwrap.indent(license_text, "#   ", lambda l: True))
-
+        result += get_license_string(dist)
         result.append(sep)
 
     return "".join(result)
 
 
-def importer_expand(source: Path, expand_module: List[str]) -> str:
+def importer_expand(source: Path, expand_module: list[str]) -> str:
     """Expand modules using importlib.
 
     Args:
@@ -185,11 +175,13 @@ def importer_expand(source: Path, expand_module: List[str]) -> str:
     finder = ModuleFinder(excludes=EXCLUDE_MODULES)
     finder.run_script(str(source))
 
-    result: List[str] = []
-    bundled: Set[str] = set()
+    result: list[str] = []
+    bundled: set[str] = set()
     for name, module in finder.modules.items():
-        file: Optional[str] = module.__file__  # type: ignore
-        is_package = module.__path__ is not None  # type: ignore
+        if not hasattr(module, "__file__") or not hasattr(module, "__path__"):
+            raise ValueError
+        file: str = module.__file__
+        is_package = module.__path__ is not None
         top_package = name.split(".")[0]
 
         if file is None:
@@ -202,7 +194,7 @@ def importer_expand(source: Path, expand_module: List[str]) -> str:
                 sys.exit(1)
 
             bundled.add(top_package)
-            logger.info(f"Load `{name}` from {file}")
+            logger.info("Load `%s` from %s", name, file)
             if not result:
                 result.append(BUNDLE_IMPORTER_CODE)
 
@@ -215,7 +207,7 @@ def importer_expand(source: Path, expand_module: List[str]) -> str:
                 f"    is_package={is_package},\n"
                 '    code="""\\\n'
                 f'{module_code}""",\n'
-                ")\n"
+                ")\n",
             )
 
     if result:
